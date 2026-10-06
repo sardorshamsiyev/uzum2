@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bozor
+      POSTGRES_USER: bozor
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes: [pgdata:/var/lib/postgresql/data]
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on: [db]
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/bozor
+      DB_USER: bozor
+      DB_PASS: ${DB_PASS}
+      OWNER_PHONE: ${OWNER_PHONE}
+      JWT_SECRET: ${JWT_SECRET}
+      UPLOAD_DIR: /data/uploads
+    volumes: [uploads:/data/uploads]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
