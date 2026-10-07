@@ -1,34 +1,49 @@
 package uz.bozor.controller;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import uz.bozor.entity.Image;
+import uz.bozor.repo.ImageRepository;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping("/api/files")
 public class FileController {
-    private static final Map<String, String> EXT = Map.of("image/jpeg", "jpg", "image/png", "png", "image/webp", "webp");
-    @Value("${app.upload-dir}") private String uploadDir;
+    private static final Set<String> TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+    private final ImageRepository images;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public FileController(ImageRepository images) { this.images = images; }
+
+    @PostMapping(value = "/api/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Map<String, String> upload(@RequestParam("file") MultipartFile f) throws IOException {
-        String ext = EXT.get(f.getContentType());
-        if (ext == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Faqat jpg, png yoki webp rasm yuklang");
+        String ct = f.getContentType();
+        if (ct == null || !TYPES.contains(ct))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Faqat jpg, png yoki webp rasm yuklang");
         if (f.isEmpty() || f.getSize() > 5 * 1024 * 1024)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rasm 5 MB dan oshmasligi kerak");
-        Path dir = Paths.get(uploadDir).toAbsolutePath();
-        Files.createDirectories(dir);
-        String name = UUID.randomUUID() + "." + ext;
-        f.transferTo(dir.resolve(name));
-        return Map.of("url", "/uploads/" + name);
+        Image img = new Image();
+        img.setId(UUID.randomUUID().toString());
+        img.setContentType(ct);
+        img.setData(f.getBytes());
+        images.save(img);
+        return Map.of("url", "/uploads/" + img.getId());
+    }
+
+    @GetMapping("/uploads/{id}")
+    public ResponseEntity<byte[]> get(@PathVariable String id) {
+        return images.findById(id)
+                .map(i -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(i.getContentType()))
+                        .cacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic())
+                        .body(i.getData()))
+                .orElse(ResponseEntity.notFound().build());
     }
 }
