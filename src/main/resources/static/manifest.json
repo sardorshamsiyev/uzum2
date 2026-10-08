@@ -1,0 +1,16 @@
+{
+  "name": "Bozor — e'lonlar",
+  "short_name": "Bozor",
+  "description": "Bozor e'lonlar ilovasi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#7000ff",
+  "theme_color": "#7000ff",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

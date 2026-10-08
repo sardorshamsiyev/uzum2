@@ -2,6 +2,12 @@
 <html lang="uz"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bozor — e'lonlar</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#7000ff">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bozor">
 <style>
 :root{--bg:#f4f4f8;--card:#fff;--tx:#1b1b2f;--mu:#777;--pr:#7000ff;--bd:#e4e4ee;--dn:#d62d4f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14141c;--card:#1f1f2b;--tx:#f0f0f6;--mu:#9a9ab0;--bd:#2f2f40;--pr:#a066ff}}
@@ -35,8 +41,10 @@ button.g{background:transparent;color:var(--pr);border:1px solid var(--pr)}butto
 .ov{position:fixed;inset:0;background:#0007;z-index:9;display:flex;align-items:center;justify-content:center;padding:12px}
 .sh{background:var(--bg);width:100%;max-width:480px;max-height:92%;overflow:auto;border-radius:18px;padding:16px}
 .pv{width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-top:6px}
+#inst{display:none;position:sticky;top:env(safe-area-inset-top,0px);z-index:7;background:var(--card);border-bottom:1px solid var(--bd);padding:8px 12px}
+#inst.on{display:block}#inst .W{display:flex;gap:8px;align-items:center;justify-content:space-between}
 </style></head><body>
-<div class="top"><div class="W"><span id="tt">Bozor</span><span id="ta"></span></div></div><div id="ptr">↓ Yangilash uchun torting</div><div class="W" id="app"></div><div id="nav"></div><div id="modal"></div>
+<div class="top"><div class="W"><span id="tt">Bozor</span><span id="ta"></span></div></div><div id="inst"><div class="W"><span id="it" class="mu"></span><span class="row"><button class="s" id="ib" onclick="doInst()">📲 O'rnatish</button><button class="s g" onclick="hideInst()">✕</button></span></div></div><div id="ptr">↓ Yangilash uchun torting</div><div class="W" id="app"></div><div id="nav"></div><div id="modal"></div>
 <script>
 const CATS=["Buyum","Hayvon","Transport","Uy-joy","Kiyim","Texnika","Boshqa"],TK="bozor_token";
 let tok=null,me=null,tab="home",qm="item",q="",reg=false,unread=0,pend=0,cache={},blob=null;
@@ -108,4 +116,18 @@ let y0=null;addEventListener("touchstart",e=>{y0=scrollY===0&&tab==="home"&&me?e
 addEventListener("touchmove",e=>{if(y0===null)return;const d=e.touches[0].clientY-y0;$("ptr").style.height=d>0?Math.min(d,50)+"px":0;$("ptr").textContent=d>70?"↑ Qo'yib yuboring":"↓ Yangilash uchun torting"},{passive:true});
 addEventListener("touchend",e=>{if(y0===null)return;const d=e.changedTouches[0].clientY-y0;$("ptr").style.height=0;y0=null;if(d>70)render()});
 (async()=>{if(tok){try{me=await api("/me")}catch(e){tok=null}}render()})();
+
+// --- PWA: ilova sifatida o'rnatish ---
+let dp=null;
+const standalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+function hideInst(){$("inst").classList.remove("on");try{localStorage.setItem("inst_hide","1")}catch(e){}}
+function showInst(){let h=false;try{h=localStorage.getItem("inst_hide")}catch(e){}if(h||standalone())return;
+ if(dp){$("it").textContent="Saytni ilova sifatida o'rnating";$("ib").style.display="";$("inst").classList.add("on")}
+ else if(ios){$("it").textContent="Safari: Ulashish → «Bosh ekranga qo'shish»";$("ib").style.display="none";$("inst").classList.add("on")}}
+async function doInst(){if(!dp)return;dp.prompt();await dp.userChoice;dp=null;$("inst").classList.remove("on")}
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;showInst()});
+addEventListener("appinstalled",()=>$("inst").classList.remove("on"));
+if(ios)showInst();
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 </script></body></html>
