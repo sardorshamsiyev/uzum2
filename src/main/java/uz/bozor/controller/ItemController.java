@@ -39,12 +39,13 @@ public class ItemController {
         i.setProductionDate(r.productionDate());
         i.setPrice(r.price());
         i.setImageUrl(r.imageUrl());
+        i.setStatus(me.getRole() == Role.USER ? ItemStatus.PENDING : ItemStatus.ACTIVE);
         return ItemRes.of(items.save(i));
     }
 
     @GetMapping
     public List<ItemRes> list(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return map(items.findByStatusOrderByCreatedAtDesc(ItemStatus.ACTIVE, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50))));
+        return map(items.feed(ItemStatus.ACTIVE, Role.OWNER, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50))));
     }
 
     @GetMapping("/random")

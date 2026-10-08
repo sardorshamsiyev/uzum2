@@ -76,6 +76,31 @@ public class AdminController {
         return UserRes.of(users.save(t));
     }
 
+    @GetMapping("/items/pending")
+    public List<ItemRes> pending() {
+        return items.findByStatusOrderByCreatedAtAsc(ItemStatus.PENDING).stream().map(ItemRes::of).toList();
+    }
+
+    @PatchMapping("/items/{id}/approve")
+    public ItemRes approve(@PathVariable Long id) { return decide(id, ItemStatus.ACTIVE); }
+
+    @PatchMapping("/items/{id}/reject")
+    public ItemRes reject(@PathVariable Long id) { return decide(id, ItemStatus.REJECTED); }
+
+    private ItemRes decide(Long id, ItemStatus st) {
+        Item i = items.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E'lon topilmadi"));
+        if (i.getStatus() != ItemStatus.PENDING)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bu e'lon allaqachon ko'rib chiqilgan");
+        i.setStatus(st);
+        return ItemRes.of(items.save(i));
+    }
+
+    @GetMapping("/users/{id}/items")
+    public List<ItemRes> userItems(@PathVariable Long id) {
+        User t = users.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Foydalanuvchi topilmadi"));
+        return items.findBySellerAndStatusNotOrderByCreatedAtDesc(t, ItemStatus.REMOVED).stream().map(ItemRes::of).toList();
+    }
+
     /** Fikrlarni faqat EGA ko'radi. */
     @GetMapping("/feedback")
     @PreAuthorize("hasRole('OWNER')")
