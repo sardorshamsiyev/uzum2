@@ -18,6 +18,7 @@ public class Item {
     @Column(nullable = false) private LocalDate productionDate;
     @Column(nullable = false) private Long price;
     @Column(nullable = false) private String imageUrl;
+    @Column(length = 500) private String extraImages;
     @Enumerated(EnumType.STRING) @Column(nullable = false) private ItemStatus status = ItemStatus.ACTIVE;
     private Instant createdAt;
 

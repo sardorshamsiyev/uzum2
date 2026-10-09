@@ -3,6 +3,8 @@ package uz.bozor.dto;
 import jakarta.validation.constraints.*;
 import uz.bozor.entity.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDate;
 
 public final class Dto {
@@ -31,15 +33,20 @@ public final class Dto {
             @NotBlank @Size(max = 1000, message = "Holati juda uzun") String condition,
             @NotNull(message = "Sanani kiriting") @PastOrPresent(message = "Kelajak sanasini kiritib bo'lmaydi") LocalDate productionDate,
             @NotNull @Min(value = 10000, message = "Narx kamida 10 000 so'm bo'lishi kerak") Long price,
-            @NotBlank(message = "Rasm joylash majburiy") String imageUrl) {}
+            @NotBlank(message = "Rasm joylash majburiy") String imageUrl,
+            @Size(max = 2, message = "Ko'pi bilan 3 ta rasm joylash mumkin") List<String> extraImages) {}
 
     public record ItemRes(Long id, String name, String category, String condition, LocalDate productionDate,
-                          Long price, String imageUrl, ItemStatus status, Instant createdAt, SellerRes seller) {
+                          Long price, String imageUrl, ItemStatus status, Instant createdAt, SellerRes seller, List<String> images) {
         public static ItemRes of(Item i) {
             User s = i.getSeller();
+            List<String> imgs = new ArrayList<>();
+            imgs.add(i.getImageUrl());
+            if (i.getExtraImages() != null)
+                for (String x : i.getExtraImages().split(",")) if (!x.isBlank()) imgs.add(x);
             return new ItemRes(i.getId(), i.getName(), i.getCategory(), i.getCondition(), i.getProductionDate(),
                     i.getPrice(), i.getImageUrl(), i.getStatus(), i.getCreatedAt(),
-                    new SellerRes(s.getId(), s.getNickname(), s.getFullName(), s.getPhone(), s.getAvatarUrl()));
+                    new SellerRes(s.getId(), s.getNickname(), s.getFullName(), s.getPhone(), s.getAvatarUrl()), imgs);
         }
     }
 

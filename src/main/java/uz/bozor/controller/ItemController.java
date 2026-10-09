@@ -39,6 +39,8 @@ public class ItemController {
         i.setProductionDate(r.productionDate());
         i.setPrice(r.price());
         i.setImageUrl(r.imageUrl());
+        if (r.extraImages() != null)
+            i.setExtraImages(String.join(",", r.extraImages().stream().filter(x -> x != null && !x.isBlank()).limit(2).toList()));
         i.setStatus(me.getRole() == Role.USER ? ItemStatus.PENDING : ItemStatus.ACTIVE);
         return ItemRes.of(items.save(i));
     }
