@@ -53,11 +53,12 @@ button.g{background:transparent;color:var(--pr);border:1px solid var(--pr)}butto
 .big{width:100%;margin-top:14px;padding:13px;font-size:16px}
 .gal{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px}.gal img{height:220px;max-width:92%;border-radius:12px;object-fit:cover;flex:none}
 .thumbs{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.thumbs .x{position:relative}.thumbs img{width:80px;height:80px;object-fit:cover;border-radius:10px;display:block}
+.tgb{display:block;text-decoration:none;background:var(--pr);color:#fff;border-radius:10px;padding:13px;font-weight:600;margin:14px 0 8px;font-size:16px}
 </style></head><body>
 <div class="top"><div class="W"><span id="tt">Bozor</span><span class="row"><span id="ta"></span><button id="thb" onclick="toggleTheme()">🌙</button></span></div></div><div id="inst"><div class="W"><span id="it" class="mu"></span><span class="row"><button class="s" id="ib" onclick="doInst()">📲 O'rnatish</button><button class="s g" onclick="hideInst()">✕</button></span></div></div><div id="ptr">↓ Yangilash uchun torting</div><div class="W" id="app"></div><div id="nav"></div><div id="modal"></div>
 <script>
 const CATS=["Buyum","Hayvon","Transport","Uy-joy","Kiyim","Texnika","Boshqa"],TK="bozor_token";
-let tok=null,me=null,tab="home",qm="item",q="",reg=false,unread=0,pend=0,cache={},blobs=[];
+let tok=null,me=null,tab="home",qm="item",q="",reg=false,unread=0,pend=0,cache={},blobs=[],tg=null,tgT=null;
 try{tok=localStorage.getItem(TK)}catch(e){}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -73,13 +74,15 @@ async function upload(b){const f=new FormData();f.append("file",b,"a.jpg");retur
 function logout(){tok=null;me=null;try{localStorage.removeItem(TK)}catch(e){}render()}
 function auth(){run(async()=>{const ph=$("lp").value.replace(/\D/g,""),pw=$("lw").value,nm=reg?$("ln").value.trim():"";
  if(reg&&nm.length<2)throw new Error("Ism-familiyani kiriting");if(ph.length!==9)throw new Error("Telefon raqamning 9 ta raqamini kiriting");if(pw.length<6)throw new Error("Parol kamida 6 ta belgi");
- const r=await api("/auth/"+(reg?"register":"login"),{method:"POST",body:reg?{fullName:nm,phone:ph,password:pw}:{phone:ph,password:pw}});
+ if(reg){const t=await api("/auth/tg/start",{method:"POST",body:{fullName:nm,phone:ph,password:pw}});tg=t;render();pollTg(t.token);return}const r=await api("/auth/login",{method:"POST",body:{phone:ph,password:pw}});
  tok=r.token;me=r.user;try{localStorage.setItem(TK,tok)}catch(e){}tab="home";render()})}
 const ST={SOLD:["sotilgan",""],PENDING:["ko'rib chiqilmoqda",""],REJECTED:["rad etildi","r"]};
 const stTag=s=>ST[s]?` <span class="tag ${ST[s][1]}">${ST[s][0]}</span>`:"";
 const acc=c=>c==="Boshqa"?"e'lonni":c.toLowerCase()+"ni";
 const rejMsg=i=>`Kechirasiz, bu ${acc(i.category)} joylab bo'lmaydi, chunki bu yaroqsiz sifatida ko'rildi.`;
 const fmtD=t=>{const d=new Date(t),p=n=>String(n).padStart(2,"0");return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes())};
+function pollTg(t){clearTimeout(tgT);const f=async()=>{if(!tg||tg.token!==t)return;try{const r=await api("/auth/tg/status/"+t);if(r.status==="VERIFIED"){tok=r.auth.token;me=r.auth.user;tg=null;try{localStorage.setItem(TK,tok)}catch(e){}tab="home";render();return}if(r.status==="EXPIRED"){tg=null;alert("Vaqt tugadi. Qaytadan urinib ko'ring.");render();return}}catch(e){if(e.message&&e.message.includes("allaqachon")){tg=null;alert(e.message);render();return}}tgT=setTimeout(f,2000)};tgT=setTimeout(f,2000)}
+function cancelTg(){clearTimeout(tgT);tg=null;render()}
 function card(i){cache[i.id]=i;return `<div class="it" onclick="view(${i.id})"><div class="im"><img src="${esc(i.imageUrl)}"></div><div class="b"><div>${esc(i.name)}</div><div class="pr">${money(i.price)}</div><div class="mu">${esc(i.category)} · @${esc(i.seller.nickname)}${stTag(i.status)}</div></div></div>`}
 const grid=l=>l.length?`<div class="grid">${l.map(card).join("")}</div>`:"";
 function view(id){const i=cache[id],s=i.seller,mine=me.id===s.id;
@@ -110,7 +113,8 @@ function nav(){$("nav").innerHTML=`<div class="nav"><div class="W">${[["home","�
 function doSearch(){const t=q.trim();if(!t){$("sr").innerHTML="";return}run(async()=>{const l=await api("/items/search?by="+qm+"&q="+encodeURIComponent(t));$("sr").innerHTML=l.length?grid(l):'<p class="mu">Hech narsa topilmadi</p>'})}
 async function render(){const a=$("app");$("ta").innerHTML="";
  if(!me){$("nav").innerHTML="";$("tt").textContent="Bozor";
-  a.innerHTML=`<div class="auth"><div class="card auth-card"><div class="logo">🛍️</div><h2>Bozor</h2><p class="mu">${reg?"Yangi akkaunt yarating":"Akkauntingizga kiring"}</p><div class="seg"><button class="${reg?"":"on"}" onclick="reg=false;render()">Kirish</button><button class="${reg?"on":""}" onclick="reg=true;render()">Ro'yxatdan o'tish</button></div>${reg?'<label class="lb">Ism familiya</label><input id="ln" placeholder="Masalan: Sardor Karimov" autocomplete="name">':""}<label class="lb">Telefon raqam</label><div class="ph"><span>+998</span><input id="lp" inputmode="numeric" maxlength="12" placeholder="90 123 45 67" oninput="let d=this.value.replace(/\\D/g,'').slice(0,9);this.value=d.replace(/(\\d{2})(\\d{0,3})(\\d{0,2})(\\d{0,2})/,(x,a,b,c,e)=>[a,b,c,e].filter(Boolean).join(' '))"></div><label class="lb">Parol</label><input id="lw" type="password" placeholder="Kamida 6 ta belgi" autocomplete="${reg?"new-password":"current-password"}" onkeydown="if(event.key==='Enter')auth()"><button class="big" onclick="auth()">${reg?"Ro'yxatdan o'tish":"Kirish"}</button></div></div>`;return}
+  if(tg){a.innerHTML=`<div class="auth"><div class="card auth-card"><div class="logo">✈️</div><h2>Telegram orqali tasdiqlang</h2><p class="mu" style="text-align:left">1. Pastdagi tugmani bosib botni oching<br>2. <b>Start</b> ni bosing<br>3. «📱 Raqamni tasdiqlash» tugmasini bosing<br>4. Shu sahifaga qayting, o'zi kirasiz</p><a class="tgb" href="${esc(tg.link)}" target="_blank" rel="noopener">Telegramni ochish</a><p class="mu">⏳ Tasdiqlash kutilmoqda...</p><button class="g" onclick="cancelTg()">Bekor qilish</button></div></div>`;return}
+  a.innerHTML=`<div class="auth"><div class="card auth-card"><div class="logo">🛍️</div><h2>Bozor</h2><p class="mu">${reg?"Yangi akkaunt yarating":"Akkauntingizga kiring"}</p><div class="seg"><button class="${reg?"":"on"}" onclick="reg=false;render()">Kirish</button><button class="${reg?"on":""}" onclick="reg=true;render()">Ro'yxatdan o'tish</button></div>${reg?'<label class="lb">Ism familiya</label><input id="ln" placeholder="Masalan: Sardor Karimov" autocomplete="name">':""}<label class="lb">Telefon raqam</label><div class="ph"><span>+998</span><input id="lp" inputmode="numeric" maxlength="12" placeholder="90 123 45 67" oninput="let d=this.value.replace(/\\D/g,'').slice(0,9);this.value=d.replace(/(\\d{2})(\\d{0,3})(\\d{0,2})(\\d{0,2})/,(x,a,b,c,e)=>[a,b,c,e].filter(Boolean).join(' '))"></div><label class="lb">Parol</label><input id="lw" type="password" placeholder="Kamida 6 ta belgi" autocomplete="${reg?"new-password":"current-password"}" onkeydown="if(event.key==='Enter')auth()"><button class="big" onclick="auth()">${reg?"Davom etish (Telegram)":"Kirish"}</button></div></div>`;return}
  nav();if(staff(me))api("/admin/items/pending").then(l=>{if(l.length!==pend){pend=l.length;nav()}}).catch(()=>{});a.innerHTML='<p class="mu" style="text-align:center;margin-top:40px">Yuklanmoqda...</p>';
  try{
  if(tab==="home"){$("tt").textContent="Bozor";$("ta").innerHTML='<button onclick="render()">↻ Yangilash</button>';const l=await api("/items/random?size=40");a.innerHTML=`<div class="w">${l.length?grid(l):'<p class="mu" style="text-align:center;margin-top:40px">Hozircha e\'lon yo\'q. + tugmasini bosing.</p>'}</div>`}

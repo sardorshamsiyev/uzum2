@@ -64,4 +64,8 @@ public final class Dto {
     }
 
     public record StatsRes(long users, long posted, long removed, long sold) {}
+
+    public record TgStartRes(String token, String link) {}
+
+    public record TgStatusRes(String status, AuthRes auth) {}
 }
