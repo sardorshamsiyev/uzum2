@@ -140,14 +140,20 @@ applyTheme();
 // --- PWA: ilova sifatida o'rnatish ---
 let dp=null;
 const standalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone;
-const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-function hideInst(){$("inst").classList.remove("on");try{localStorage.setItem("inst_hide","1")}catch(e){}}
-function showInst(){let h=false;try{h=localStorage.getItem("inst_hide")}catch(e){}if(h||standalone())return;
- if(dp){$("it").textContent="Saytni ilova sifatida o'rnating";$("ib").style.display="";$("inst").classList.add("on")}
- else if(ios){$("it").textContent="Safari: Ulashish → «Bosh ekranga qo'shish»";$("ib").style.display="none";$("inst").classList.add("on")}}
-async function doInst(){if(!dp)return;dp.prompt();await dp.userChoice;dp=null;$("inst").classList.remove("on")}
-addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;showInst()});
-addEventListener("appinstalled",()=>$("inst").classList.remove("on"));
-if(ios)showInst();
+const UA=navigator.userAgent,ios=/iphone|ipad|ipod/i.test(UA),inApp=/Telegram|Instagram|FBAN|FBAV|Line\/|; wv\)/i.test(UA),safari=/safari/i.test(UA)&&!/crios|fxios|edgios/i.test(UA);
+function hideInst(){$("inst").classList.remove("on");try{localStorage.setItem("inst_hide",String(Date.now()))}catch(e){}}
+function showInst(){let h=0,d=null;try{h=+localStorage.getItem("inst_hide")||0;d=localStorage.getItem("inst_done")}catch(e){}if(standalone()){try{localStorage.setItem("inst_done","1")}catch(e){}return}if(d||Date.now()-h<3*864e5)return;
+ $("inst").classList.add("on");$("ib").style.display="";
+ if(dp){$("it").textContent="Saytni ilova sifatida o'rnating";$("ib").textContent="📲 O'rnatish"}
+ else{$("it").textContent="Telefonga ilova qilib o'rnating";$("ib").textContent="Qanday?"}}
+async function doInst(){if(dp){dp.prompt();await dp.userChoice;dp=null;$("inst").classList.remove("on");return}
+ const note=`<p class="mu">Havolani Telegram ichidan ochgan bo'lsangiz: yuqoridagi <b>⋮</b> → <b>«Brauzerda ochish»</b>.</p>`;
+ const steps=inApp?`<p><b>Siz hozir Telegram yoki boshqa ilova ichidagi brauzerdasiz.</b> Bu yerda o'rnatib bo'lmaydi.</p><ol><li>Yuqori o'ng burchakdagi <b>⋮</b> (yoki <b>⋯</b>) tugmasini bosing</li><li><b>«Brauzerda ochish»</b> ni tanlang (Chrome yoki Safari)</li><li>Sayt ochilgach, o'rnatishni qaytadan bosing</li></ol>`
+  :ios?(safari?`<ol><li>Pastdagi <b>Ulashish</b> (⬆️) tugmasini bosing</li><li><b>«Bosh ekranga qo'shish»</b> ni tanlang</li><li><b>Qo'shish</b> ni bosing</li></ol>`:`<p>iPhone'da ilova faqat <b>Safari</b> brauzerida o'rnatiladi. Havolani Safari'da oching.</p>`)+note
+  :`<ol><li>Chrome'da yuqori o'ng burchakdagi <b>⋮</b> tugmasini bosing</li><li><b>«Ilovani o'rnatish»</b> yoki <b>«Bosh ekranga qo'shish»</b> ni tanlang</li><li><b>O'rnatish</b> ni bosing</li></ol><p class="mu">Bu variant ko'rinmasa, saytni Chrome'da oching.</p>`+note;
+ $("modal").innerHTML=MH("📲 Ilovani o'rnatish",steps)}
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;try{localStorage.removeItem("inst_done")}catch(x){}showInst()});
+addEventListener("appinstalled",()=>{$("inst").classList.remove("on");try{localStorage.setItem("inst_done","1")}catch(e){}});
+setTimeout(showInst,2500);
 if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 </script></body></html>
