@@ -37,6 +37,11 @@ public class AdminController {
     @GetMapping("/users")
     public List<UserRes> allUsers() { return users.findAll().stream().map(UserRes::of).toList(); }
 
+    @GetMapping("/installed")
+    public List<UserRes> installed() {
+        return users.findByInstalledAtNotNullOrderByInstalledAtDesc().stream().map(UserRes::of).toList();
+    }
+
     @GetMapping("/stats")
     public StatsRes stats() {
         return new StatsRes(users.count(), items.count(), items.countByStatus(ItemStatus.REMOVED), items.countByStatus(ItemStatus.SOLD));

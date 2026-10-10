@@ -8,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 import uz.bozor.dto.Dto.*;
 import uz.bozor.entity.User;
 import uz.bozor.repo.UserRepository;
+import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/me")
@@ -18,6 +19,15 @@ public class MeController {
 
     @GetMapping
     public UserRes me(@AuthenticationPrincipal User me) { return UserRes.of(me); }
+
+    /** Ilova o'rnatilgani (yoki ilova sifatida ochilgani) haqida belgi. */
+    @PostMapping("/installed")
+    public void installed(@AuthenticationPrincipal User me) {
+        if (me.getInstalledAt() == null) {
+            me.setInstalledAt(Instant.now());
+            users.save(me);
+        }
+    }
 
     @PatchMapping("/avatar")
     public UserRes avatar(@AuthenticationPrincipal User me, @Valid @RequestBody AvatarReq r) {

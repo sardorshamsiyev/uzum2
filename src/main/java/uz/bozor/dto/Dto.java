@@ -17,9 +17,9 @@ public final class Dto {
 
     public record LoginReq(@NotBlank String phone, @NotBlank String password) {}
 
-    public record UserRes(Long id, String fullName, String phone, String nickname, String avatarUrl, Role role, boolean blocked) {
+    public record UserRes(Long id, String fullName, String phone, String nickname, String avatarUrl, Role role, boolean blocked, Instant installedAt) {
         public static UserRes of(User u) {
-            return new UserRes(u.getId(), u.getFullName(), u.getPhone(), u.getNickname(), u.getAvatarUrl(), u.getRole(), u.isBlocked());
+            return new UserRes(u.getId(), u.getFullName(), u.getPhone(), u.getNickname(), u.getAvatarUrl(), u.getRole(), u.isBlocked(), u.getInstalledAt());
         }
     }
 

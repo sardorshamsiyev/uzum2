@@ -18,6 +18,7 @@ public class User {
     @Enumerated(EnumType.STRING) @Column(nullable = false) private Role role = Role.USER;
     private boolean blocked;
     private Instant createdAt;
+    private Instant installedAt;
 
     @PrePersist void onCreate() { createdAt = Instant.now(); }
 }
