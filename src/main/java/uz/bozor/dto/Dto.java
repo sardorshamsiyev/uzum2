@@ -65,6 +65,9 @@ public final class Dto {
 
     public record StatsRes(long users, long posted, long removed, long sold) {}
 
+    public record TgVerifyReq(@NotBlank String token,
+            @NotBlank @Size(min = 6, max = 6, message = "6 xonali kodni kiriting") String code) {}
+
     public record TgStartRes(String token, String link) {}
 
     public record TgStatusRes(String status, AuthRes auth) {}

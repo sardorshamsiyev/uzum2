@@ -17,4 +17,6 @@ public class PendingReg {
     private Instant createdAt;
     private boolean verified;
     private Long chatId;
+    private String code;
+    private Integer attempts;
 }

@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ public class TelegramBot {
     private final PendingRegRepository repo;
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper om = new ObjectMapper();
+    private static final SecureRandom RNG = new SecureRandom();
 
     public TelegramBot(@Value("${app.telegram.bot-token:}") String token, PendingRegRepository repo) {
         this.token = token;
@@ -81,9 +83,12 @@ public class TelegramBot {
             String d = c.path("phone_number").asText("").replaceAll("\\D", "");
             String phone = d.length() >= 9 ? "+998" + d.substring(d.length() - 9) : "";
             if (phone.equals(p.getPhone())) {
+                String code = String.format("%06d", RNG.nextInt(1_000_000));
+                p.setCode(code);
+                p.setAttempts(0);
                 p.setVerified(true);
                 repo.save(p);
-                send(chatId, "✅ Raqamingiz tasdiqlandi! Saytga qaytishingiz mumkin.", Map.of("remove_keyboard", true));
+                send(chatId, "✅ Raqamingiz tasdiqlandi!\n\nSizning kodingiz: " + code + "\n\nUni saytdagi oynaga kiriting. Kod 15 daqiqa amal qiladi. Kodni hech kimga bermang.", Map.of("remove_keyboard", true));
             } else {
                 send(chatId, "❌ Telegramdagi raqamingiz saytda kiritgan raqam bilan mos kelmadi. Saytga qaytib, to'g'ri raqamni kiriting.", Map.of("remove_keyboard", true));
             }

@@ -71,13 +71,36 @@ public class AuthController {
         return new TgStartRes(p.getId(), "https://t.me/" + botUsername + "?start=" + p.getId());
     }
 
-    /** 2-qadam: sayt shuni har 2 soniyada so'raydi. Tasdiqlansa, akkaunt ochiladi. */
+    private static boolean expired(PendingReg p) {
+        return p.getCreatedAt() == null || p.getCreatedAt().isBefore(Instant.now().minus(Duration.ofMinutes(15)));
+    }
+
+    /** 2-qadam: sayt shuni har 2 soniyada so'raydi (faqat holat ko'rsatish uchun). */
     @GetMapping("/tg/status/{token}")
     public TgStatusRes tgStatus(@PathVariable String token) {
         PendingReg p = pend.findById(token).orElse(null);
-        if (p == null || p.getCreatedAt() == null || p.getCreatedAt().isBefore(Instant.now().minus(Duration.ofMinutes(15))))
-            return new TgStatusRes("EXPIRED", null);
-        if (!p.isVerified()) return new TgStatusRes("PENDING", null);
+        if (p == null || expired(p)) return new TgStatusRes("EXPIRED", null);
+        return new TgStatusRes(p.isVerified() && p.getCode() != null ? "CODE_SENT" : "PENDING", null);
+    }
+
+    /** 3-qadam: foydalanuvchi Telegramdan kelgan kodni kiritadi; to'g'ri bo'lsa, akkaunt ochiladi. */
+    @PostMapping("/tg/verify")
+    public AuthRes tgVerify(@Valid @RequestBody TgVerifyReq r) {
+        PendingReg p = pend.findById(r.token()).orElse(null);
+        if (p == null || expired(p))
+            throw new ResponseStatusException(HttpStatus.GONE, "Vaqt tugadi. Ro'yxatdan o'tishni qaytadan boshlang");
+        if (!p.isVerified() || p.getCode() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avval Telegram botda raqamingizni tasdiqlang");
+        if (!p.getCode().equals(r.code().trim())) {
+            int a = (p.getAttempts() == null ? 0 : p.getAttempts()) + 1;
+            if (a >= 5) {
+                pend.delete(p);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Juda ko'p xato urinish. Qaytadan boshlang");
+            }
+            p.setAttempts(a);
+            pend.save(p);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kod noto'g'ri");
+        }
         if (users.existsByPhone(p.getPhone())) {
             pend.delete(p);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu raqam allaqachon ro'yxatdan o'tgan");
@@ -90,7 +113,7 @@ public class AuthController {
         u.setRole(p.getPhone().equals(ownerPhone) ? Role.OWNER : Role.USER);
         users.save(u);
         pend.delete(p);
-        return new TgStatusRes("VERIFIED", new AuthRes(jwt.create(u), UserRes.of(u)));
+        return new AuthRes(jwt.create(u), UserRes.of(u));
     }
 
     @PostMapping("/login")
