@@ -50,6 +50,13 @@ public class ItemController {
         return map(items.feed(ItemStatus.ACTIVE, Role.USER, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50))));
     }
 
+    /** E'lonlar bo'limi: ega va adminlarning e'lonlari (hamma ko'radi). */
+    @GetMapping("/official")
+    public List<ItemRes> official(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "30") int size) {
+        return map(items.byRoles(ItemStatus.ACTIVE, List.of(Role.OWNER, Role.ADMIN),
+                PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50))));
+    }
+
     @GetMapping("/random")
     public List<ItemRes> random(@RequestParam(defaultValue = "20") int size) {
         return map(items.random(Math.min(Math.max(size, 1), 50)));
@@ -59,7 +66,7 @@ public class ItemController {
     public List<ItemRes> search(@RequestParam String q, @RequestParam(defaultValue = "item") String by) {
         String s = q.trim().replace("@", "");
         if (s.isEmpty()) return List.of();
-        return map("user".equals(by) ? items.searchBySeller(ItemStatus.ACTIVE, Role.USER, s) : items.searchByItem(ItemStatus.ACTIVE, Role.USER, s));
+        return map("user".equals(by) ? items.searchBySeller(ItemStatus.ACTIVE, s) : items.searchByItem(ItemStatus.ACTIVE, s));
     }
 
     @GetMapping("/my")

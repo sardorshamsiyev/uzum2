@@ -23,9 +23,12 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     @Query(value = "select i.* from items i join users u on u.id = i.seller_id where i.status = 'ACTIVE' and u.role = 'USER' order by random() limit :size", nativeQuery = true)
     List<Item> random(@Param("size") int size);
 
-    @Query("select i from Item i where i.status = :st and i.seller.role = :role and (lower(i.name) like lower(concat('%', :q, '%')) or lower(i.category) like lower(concat('%', :q, '%'))) order by i.createdAt desc")
-    List<Item> searchByItem(@Param("st") ItemStatus st, @Param("role") Role role, @Param("q") String q);
+    @Query("select i from Item i where i.status = :st and i.seller.role in :roles order by i.createdAt desc")
+    List<Item> byRoles(@Param("st") ItemStatus st, @Param("roles") java.util.Collection<Role> roles, Pageable p);
 
-    @Query("select i from Item i where i.status = :st and i.seller.role = :role and lower(i.seller.nickname) like lower(concat('%', :q, '%')) order by i.createdAt desc")
-    List<Item> searchBySeller(@Param("st") ItemStatus st, @Param("role") Role role, @Param("q") String q);
+    @Query("select i from Item i where i.status = :st and (lower(i.name) like lower(concat('%', :q, '%')) or lower(i.category) like lower(concat('%', :q, '%'))) order by i.createdAt desc")
+    List<Item> searchByItem(@Param("st") ItemStatus st, @Param("q") String q);
+
+    @Query("select i from Item i where i.status = :st and lower(i.seller.nickname) like lower(concat('%', :q, '%')) order by i.createdAt desc")
+    List<Item> searchBySeller(@Param("st") ItemStatus st, @Param("q") String q);
 }
