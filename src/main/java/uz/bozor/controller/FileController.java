@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@RestController
+@RestControllerkut
 public class FileController {
     private static final Set<String> TYPES = Set.of("image/jpeg", "image/png", "image/webp");
     private final ImageRepository images;
