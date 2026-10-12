@@ -150,6 +150,13 @@ function showInst(){let h=0,d=null;try{h=+localStorage.getItem("inst_hide")||0;d
  $("inst").classList.add("on");$("ib").style.display="";
  if(dp){$("it").textContent="Saytni ilova sifatida o'rnating";$("ib").textContent="📲 O'rnatish"}
  else{$("it").textContent="Ilova qilib o'rnating";$("ib").textContent="Qanday?"}}
+async function diag(){const o=[];
+ const br=inApp?"Telegram yoki boshqa ilova ichidagi brauzer":/SamsungBrowser/i.test(UA)?"Samsung Internet":/Firefox|FxiOS/i.test(UA)?"Firefox":/Edg/i.test(UA)?"Edge":/Chrome|CriOS/i.test(UA)?"Chrome":/Safari/i.test(UA)?"Safari":"noma'lum";
+ o.push("Brauzer: "+br);o.push("Ilova oynasidami: "+(standalone()?"ha":"yo'q"));
+ try{const r=await navigator.serviceWorker.getRegistration();o.push("Service worker: "+(r?"faol":"yo'q"))}catch(e){o.push("Service worker: qo'llab-quvvatlanmaydi")}
+ try{const m=await(await fetch("/manifest.json")).json();o.push("Manifest: bor, ikonkalar "+(m.icons||[]).length+" ta")}catch(e){o.push("Manifest: ochilmadi")}
+ o.push("Brauzerning o'rnatish taklifi: "+(dp?"kelgan":"kelmagan"));
+ const el=$("dg");if(el)el.innerHTML=o.join("<br>")}
 async function doInst(){if(dp){dp.prompt();await dp.userChoice;dp=null;$("inst").classList.remove("on");return}
  const note=`<p class="mu">Havolani Telegram ichidan ochgan bo'lsangiz: yuqoridagi <b>⋮</b> → <b>«Brauzerda ochish»</b>.</p>`;
  const steps=inApp?`<p><b>Siz hozir Telegram yoki boshqa ilova ichidagi brauzerdasiz.</b> Bu yerda o'rnatib bo'lmaydi.</p><ol><li>Yuqori o'ng burchakdagi <b>⋮</b> (yoki <b>⋯</b>) tugmasini bosing</li><li><b>«Brauzerda ochish»</b> ni tanlang (Chrome yoki Safari)</li><li>Sayt ochilgach, o'rnatishni qaytadan bosing</li></ol>`
@@ -157,7 +164,7 @@ async function doInst(){if(dp){dp.prompt();await dp.userChoice;dp=null;$("inst")
   :`<ol><li>Chrome'da yuqori o'ng burchakdagi <b>⋮</b> tugmasini bosing</li><li><b>«Ilovani o'rnatish»</b> yoki <b>«Bosh ekranga qo'shish»</b> ni tanlang</li><li><b>O'rnatish</b> ni bosing</li></ol><p class="mu">Bu variant ko'rinmasa, saytni Chrome'da oching.</p>`+note;
  const intent=/android/i.test(UA)&&inApp?`<a class="tgb" href="intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end">Chrome'da ochish</a>`:"";
  const desk=!/android|iphone|ipad|ipod/i.test(UA)?`<ol><li>Manzil satrining o'ng tomonidagi <b>o'rnatish belgisini</b> (⊕) bosing</li><li>Yoki menyu <b>⋮</b> → <b>«Saytni ilova sifatida o'rnatish»</b> ni tanlang</li></ol><p class="mu">Bu faqat Chrome yoki Edge brauzerida ishlaydi.</p>`:"";
- $("modal").innerHTML=MH("📲 Ilovani o'rnatish",desk||steps+intent)}
+ $("modal").innerHTML=MH("📲 Ilovani o'rnatish",(desk||steps+intent)+`<hr style="border:0;border-top:1px solid var(--bd);margin:12px 0"><div class="mu" id="dg">Tekshiruv...</div>`);diag()}
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;try{localStorage.removeItem("inst_done")}catch(x){}showInst()});
 addEventListener("appinstalled",()=>{$("inst").classList.remove("on");try{localStorage.setItem("inst_done","1")}catch(e){}reportInstalled()});
 setTimeout(showInst,2500);
