@@ -32,12 +32,13 @@ public final class Dto {
             @NotBlank String category,
             @NotBlank @Size(max = 1000, message = "Holati juda uzun") String condition,
             @NotNull(message = "Sanani kiriting") @PastOrPresent(message = "Kelajak sanasini kiritib bo'lmaydi") LocalDate productionDate,
-            @NotNull @Min(value = 10000, message = "Narx kamida 10 000 so'm bo'lishi kerak") Long price,
+            @NotNull @Positive(message = "Narxni kiriting") Long price,
+            @Pattern(regexp = "UZS|USD", message = "Valyuta: so'm yoki dollar") String currency,
             @NotBlank(message = "Rasm joylash majburiy") String imageUrl,
             @Size(max = 2, message = "Ko'pi bilan 3 ta rasm joylash mumkin") List<String> extraImages) {}
 
     public record ItemRes(Long id, String name, String category, String condition, LocalDate productionDate,
-                          Long price, String imageUrl, ItemStatus status, Instant createdAt, SellerRes seller, List<String> images) {
+                          Long price, String imageUrl, ItemStatus status, Instant createdAt, SellerRes seller, List<String> images, String currency) {
         public static ItemRes of(Item i) {
             User s = i.getSeller();
             List<String> imgs = new ArrayList<>();
@@ -46,7 +47,8 @@ public final class Dto {
                 for (String x : i.getExtraImages().split(",")) if (!x.isBlank()) imgs.add(x);
             return new ItemRes(i.getId(), i.getName(), i.getCategory(), i.getCondition(), i.getProductionDate(),
                     i.getPrice(), i.getImageUrl(), i.getStatus(), i.getCreatedAt(),
-                    new SellerRes(s.getId(), s.getNickname(), s.getFullName(), s.getPhone(), s.getAvatarUrl()), imgs);
+                    new SellerRes(s.getId(), s.getNickname(), s.getFullName(), s.getPhone(), s.getAvatarUrl()), imgs,
+                    i.getCurrency() == null ? "UZS" : i.getCurrency());
         }
     }
 

@@ -31,6 +31,11 @@ public class ItemController {
 
     @PostMapping
     public ItemRes create(@AuthenticationPrincipal User me, @Valid @RequestBody ItemReq r) {
+        String cur = r.currency() == null ? "UZS" : r.currency();
+        if ("UZS".equals(cur) && r.price() < 10000)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Narx kamida 10 000 so'm bo'lishi kerak");
+        if ("USD".equals(cur) && r.price() < 1)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Narx kamida 1 dollar bo'lishi kerak");
         Item i = new Item();
         i.setSeller(me);
         i.setName(r.name().trim());
@@ -38,6 +43,7 @@ public class ItemController {
         i.setCondition(r.condition().trim());
         i.setProductionDate(r.productionDate());
         i.setPrice(r.price());
+        i.setCurrency(cur);
         i.setImageUrl(r.imageUrl());
         if (r.extraImages() != null)
             i.setExtraImages(String.join(",", r.extraImages().stream().filter(x -> x != null && !x.isBlank()).limit(2).toList()));

@@ -19,6 +19,7 @@ public class Item {
     @Column(nullable = false) private Long price;
     @Column(nullable = false) private String imageUrl;
     @Column(length = 500) private String extraImages;
+    @Column(length = 3) private String currency = "UZS";
     @Enumerated(EnumType.STRING) @Column(nullable = false) private ItemStatus status = ItemStatus.ACTIVE;
     private Instant createdAt;
 
