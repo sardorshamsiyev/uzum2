@@ -150,6 +150,7 @@ const isDark=()=>theme?theme==="dark":matchMedia("(prefers-color-scheme: dark)")
 function applyTheme(){document.documentElement.dataset.theme=isDark()?"dark":"light";$("thb").textContent=isDark()?"☀️":"🌙";const m=document.querySelector('meta[name=theme-color]');if(m)m.content=isDark()?"#1f1f2b":"#7000ff"}
 function toggleTheme(){theme=isDark()?"light":"dark";try{localStorage.setItem("bozor_theme",theme)}catch(e){}applyTheme()}
 applyTheme();
+{const t=document.createElement("script");t.src="https://telegram.org/js/telegram-web-app.js";t.onload=()=>{try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}};document.head.appendChild(t)}
 (async()=>{if(tok){try{me=await api("/me")}catch(e){tok=null}}render()})();
 
 // --- PWA: ilova sifatida o'rnatish ---
@@ -157,9 +158,11 @@ let dp=null;
 const standalone=()=>["standalone","minimal-ui","fullscreen","window-controls-overlay"].some(m=>matchMedia("(display-mode: "+m+")").matches)||navigator.standalone||document.referrer.startsWith("android-app://");
 const UA=navigator.userAgent,ios=/iphone|ipad|ipod/i.test(UA),inApp=/Telegram|Instagram|FBAN|FBAV|Line\/|; wv\)/i.test(UA),safari=/safari/i.test(UA)&&!/crios|fxios|edgios/i.test(UA);
 function hideInst(){$("inst").classList.remove("on");try{localStorage.setItem("inst_hide",String(Date.now()))}catch(e){}}
-function showInst(){let h=0,d=null;try{h=+localStorage.getItem("inst_hide")||0;d=localStorage.getItem("inst_done")}catch(e){}if(standalone()){try{localStorage.setItem("inst_done","1")}catch(e){}return}if(d||Date.now()-h<3*864e5)return;
+const inTg=()=>/tgWebApp/.test(location.hash)||!!(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData);
+function showInst(){let h=0,d=null;try{h=+localStorage.getItem("inst_hide")||0;d=localStorage.getItem("inst_done")}catch(e){}if(standalone()){try{localStorage.setItem("inst_done","1")}catch(e){}return}if(inTg()){if(Date.now()-h<3*864e5)return;$("inst").classList.add("on");$("ib").style.display="";$("it").textContent="Ilovani telefonga o'rnatish";$("ib").textContent="Brauzerda ochish";return}if(d||Date.now()-h<3*864e5)return;
  $("inst").classList.add("on");$("ib").style.display="";
  if(dp){$("it").textContent="Saytni ilova sifatida o'rnating";$("ib").textContent="📲 O'rnatish"}
+ else if(/android/i.test(UA)){$("it").textContent="Ilovani o'rnatish uchun Chrome'da oching";$("ib").textContent="Chrome'da ochish"}
  else{$("it").textContent="Ilova qilib o'rnating";$("ib").textContent="Qanday?"}}
 async function diag(){const o=[];
  const br=inApp?"Telegram yoki boshqa ilova ichidagi brauzer":/SamsungBrowser/i.test(UA)?"Samsung Internet":/Firefox|FxiOS/i.test(UA)?"Firefox":/Edg/i.test(UA)?"Edge":/Chrome|CriOS/i.test(UA)?"Chrome":/Safari/i.test(UA)?"Safari":"noma'lum";
@@ -168,12 +171,17 @@ async function diag(){const o=[];
  try{const m=await(await fetch("/manifest.json")).json();o.push("Manifest: bor, ikonkalar "+(m.icons||[]).length+" ta")}catch(e){o.push("Manifest: ochilmadi")}
  o.push("Brauzerning o'rnatish taklifi: "+(dp?"kelgan":"kelmagan"));
  const el=$("dg");if(el)el.innerHTML=o.join("<br>")}
-async function doInst(){if(dp){dp.prompt();await dp.userChoice;dp=null;$("inst").classList.remove("on");return}
+async function doInst(){if(inTg()){try{Telegram.WebApp.openLink(location.origin)}catch(e){window.open(location.origin,"_blank")}return}if(dp){dp.prompt();await dp.userChoice;dp=null;$("inst").classList.remove("on");return}
+ if(/android/i.test(UA)){location.href=chromeIntent();setTimeout(()=>{if(!document.hidden)installHelp()},1500);return}
+ installHelp()}
+const chromeIntent=()=>"intent://"+location.host+location.pathname+"#Intent;scheme=https;package=com.android.chrome;end";
+function copyLink(){navigator.clipboard.writeText(location.origin).then(()=>alert("Havola nusxalandi. Uni Chrome yoki Safari manzil satriga joylang.")).catch(()=>prompt("Havolani nusxalang:",location.origin))}
+function installHelp(){
  const note=`<p class="mu">Havolani Telegram ichidan ochgan bo'lsangiz: yuqoridagi <b>⋮</b> → <b>«Brauzerda ochish»</b>.</p>`;
  const steps=inApp?`<p><b>Siz hozir Telegram yoki boshqa ilova ichidagi brauzerdasiz.</b> Bu yerda o'rnatib bo'lmaydi.</p><ol><li>Yuqori o'ng burchakdagi <b>⋮</b> (yoki <b>⋯</b>) tugmasini bosing</li><li><b>«Brauzerda ochish»</b> ni tanlang (Chrome yoki Safari)</li><li>Sayt ochilgach, o'rnatishni qaytadan bosing</li></ol>`
   :ios?(safari?`<ol><li>Pastdagi <b>Ulashish</b> (⬆️) tugmasini bosing</li><li><b>«Bosh ekranga qo'shish»</b> ni tanlang</li><li><b>Qo'shish</b> ni bosing</li></ol>`:`<p>iPhone'da ilova faqat <b>Safari</b> brauzerida o'rnatiladi. Havolani Safari'da oching.</p>`)+note
   :`<ol><li>Chrome'da yuqori o'ng burchakdagi <b>⋮</b> tugmasini bosing</li><li><b>«Ilovani o'rnatish»</b> yoki <b>«Bosh ekranga qo'shish»</b> ni tanlang</li><li><b>O'rnatish</b> ni bosing</li></ol><p class="mu">Bu variant ko'rinmasa, saytni Chrome'da oching.</p>`+note;
- const intent=/android/i.test(UA)&&inApp?`<a class="tgb" href="intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end">Chrome'da ochish</a>`:"";
+ const intent=(/android/i.test(UA)?`<a class="tgb" href="${chromeIntent()}">Chrome'da ochish</a>`:"")+`<button class="g" style="width:100%;margin-top:8px" onclick="copyLink()">🔗 Havolani nusxalash</button>`;
  const desk=!/android|iphone|ipad|ipod/i.test(UA)?`<ol><li>Manzil satrining o'ng tomonidagi <b>o'rnatish belgisini</b> (⊕) bosing</li><li>Yoki menyu <b>⋮</b> → <b>«Saytni ilova sifatida o'rnatish»</b> ni tanlang</li></ol><p class="mu">Bu faqat Chrome yoki Edge brauzerida ishlaydi.</p>`:"";
  $("modal").innerHTML=MH("📲 Ilovani o'rnatish",(desk||steps+intent)+`<hr style="border:0;border-top:1px solid var(--bd);margin:12px 0"><div class="mu" id="dg">Tekshiruv...</div>`);diag()}
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;try{localStorage.removeItem("inst_done")}catch(x){}showInst()});
