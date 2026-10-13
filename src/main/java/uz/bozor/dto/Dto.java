@@ -67,6 +67,15 @@ public final class Dto {
 
     public record StatsRes(long users, long posted, long removed, long sold) {}
 
+    public record NameReq(@NotBlank @Size(min = 2, max = 80) String fullName) {}
+
+    public record PhoneReq(@NotBlank String phone) {}
+
+    public record VideoReq(@NotBlank @Size(max = 120) String title,
+            @NotBlank @Size(max = 500) @Pattern(regexp = "^https?://.+", message = "Havola https:// bilan boshlanishi kerak") String url) {}
+
+    public record VideoRes(Long id, String title, String url) {}
+
     public record TgVerifyReq(@NotBlank String token,
             @NotBlank @Size(min = 6, max = 6, message = "6 xonali kodni kiriting") String code) {}
 

@@ -19,4 +19,5 @@ public class PendingReg {
     private Long chatId;
     private String code;
     private Integer attempts;
+    private Long userId;
 }

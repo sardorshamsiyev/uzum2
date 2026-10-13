@@ -89,6 +89,8 @@ public class AuthController {
         PendingReg p = pend.findById(r.token()).orElse(null);
         if (p == null || expired(p))
             throw new ResponseStatusException(HttpStatus.GONE, "Vaqt tugadi. Ro'yxatdan o'tishni qaytadan boshlang");
+        if (p.getUserId() != null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bu so'rov ro'yxatdan o'tish uchun emas");
         if (!p.isVerified() || p.getCode() == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avval Telegram botda raqamingizni tasdiqlang");
         if (!p.getCode().equals(r.code().trim())) {

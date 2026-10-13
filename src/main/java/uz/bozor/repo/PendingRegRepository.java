@@ -13,5 +13,8 @@ public interface PendingRegRepository extends JpaRepository<PendingReg, String> 
     void deleteByPhone(String phone);
 
     @Transactional
+    void deleteByUserId(Long userId);
+
+    @Transactional
     void deleteByCreatedAtBefore(Instant t);
 }
