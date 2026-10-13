@@ -3,6 +3,7 @@ package uz.bozor.controller;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -21,14 +22,16 @@ import java.util.UUID;
 public class MeController {
     private final UserRepository users;
     private final PendingRegRepository pend;
+    private final PasswordEncoder enc;
     private final String botToken;
     private final String botUsername;
 
-    public MeController(UserRepository users, PendingRegRepository pend,
+    public MeController(UserRepository users, PendingRegRepository pend, PasswordEncoder enc,
                         @Value("${app.telegram.bot-token:}") String botToken,
                         @Value("${app.telegram.bot-username:}") String botUsername) {
         this.users = users;
         this.pend = pend;
+        this.enc = enc;
         this.botToken = botToken;
         this.botUsername = botUsername.replace("@", "").trim();
     }
@@ -59,6 +62,14 @@ public class MeController {
         return UserRes.of(users.save(me));
     }
 
+    @PatchMapping("/password")
+    public void password(@AuthenticationPrincipal User me, @Valid @RequestBody PasswordReq r) {
+        if (!enc.matches(r.oldPassword(), me.getPasswordHash()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hozirgi parol noto'g'ri");
+        me.setPasswordHash(enc.encode(r.newPassword()));
+        users.save(me);
+    }
+
     @PatchMapping("/name")
     public UserRes name(@AuthenticationPrincipal User me, @Valid @RequestBody NameReq r) {
         me.setFullName(r.fullName().trim());
@@ -85,6 +96,7 @@ public class MeController {
         p.setFullName(me.getFullName());
         p.setPasswordHash(me.getPasswordHash());
         p.setUserId(me.getId());
+        p.setPurpose("PHONE");
         p.setCreatedAt(Instant.now());
         pend.save(p);
         return new TgStartRes(p.getId(), "https://t.me/" + botUsername + "?start=" + p.getId());
@@ -94,7 +106,7 @@ public class MeController {
     @PostMapping("/phone/verify")
     public UserRes phoneVerify(@AuthenticationPrincipal User me, @Valid @RequestBody TgVerifyReq r) {
         PendingReg p = pend.findById(r.token()).orElse(null);
-        if (p == null || p.getUserId() == null || !p.getUserId().equals(me.getId())
+        if (p == null || p.getUserId() == null || !"PHONE".equals(p.getPurpose()) || !p.getUserId().equals(me.getId())
                 || p.getCreatedAt() == null || p.getCreatedAt().isBefore(Instant.now().minus(Duration.ofMinutes(15))))
             throw new ResponseStatusException(HttpStatus.GONE, "Vaqt tugadi. Raqamni o'zgartirishni qaytadan boshlang");
         if (!p.isVerified() || p.getCode() == null)

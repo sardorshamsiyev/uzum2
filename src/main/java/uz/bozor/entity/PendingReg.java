@@ -20,4 +20,5 @@ public class PendingReg {
     private String code;
     private Integer attempts;
     private Long userId;
+    private String purpose;
 }

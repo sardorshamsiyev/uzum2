@@ -67,6 +67,13 @@ public final class Dto {
 
     public record StatsRes(long users, long posted, long removed, long sold) {}
 
+    public record PasswordReq(@NotBlank String oldPassword,
+            @NotBlank @Size(min = 6, max = 72, message = "Parol kamida 6 ta belgi bo'lsin") String newPassword) {}
+
+    public record ResetVerifyReq(@NotBlank String token,
+            @NotBlank @Size(min = 6, max = 6, message = "6 xonali kodni kiriting") String code,
+            @NotBlank @Size(min = 6, max = 72, message = "Parol kamida 6 ta belgi bo'lsin") String newPassword) {}
+
     public record NameReq(@NotBlank @Size(min = 2, max = 80) String fullName) {}
 
     public record PhoneReq(@NotBlank String phone) {}

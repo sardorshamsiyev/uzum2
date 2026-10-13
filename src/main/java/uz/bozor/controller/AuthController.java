@@ -118,6 +118,60 @@ public class AuthController {
         return new AuthRes(jwt.create(u), UserRes.of(u));
     }
 
+    /** Parolni tiklash 1-qadam: raqam kiritiladi, Telegram havolasi qaytariladi. */
+    @PostMapping("/reset/start")
+    @Transactional
+    public TgStartRes resetStart(@Valid @RequestBody PhoneReq r) {
+        if (botToken.isBlank() || botUsername.isBlank())
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Telegram bot hali sozlanmagan");
+        String phone = normalize(r.phone());
+        User u = users.findByPhone(phone)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bu raqam ro'yxatdan o'tmagan"));
+        if (u.isBlocked())
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Siz bloklangansiz. Ega bilan bog'laning.");
+        pend.deleteByUserId(u.getId());
+        pend.deleteByCreatedAtBefore(Instant.now().minus(Duration.ofMinutes(30)));
+        pend.deleteByPhone(phone);
+        PendingReg p = new PendingReg();
+        p.setId(UUID.randomUUID().toString().replace("-", ""));
+        p.setPhone(phone);
+        p.setFullName(u.getFullName());
+        p.setPasswordHash(u.getPasswordHash());
+        p.setUserId(u.getId());
+        p.setPurpose("RESET");
+        p.setCreatedAt(Instant.now());
+        pend.save(p);
+        return new TgStartRes(p.getId(), "https://t.me/" + botUsername + "?start=" + p.getId());
+    }
+
+    /** 2-qadam: Telegramdan kelgan kod va yangi parol. */
+    @PostMapping("/reset/verify")
+    public AuthRes resetVerify(@Valid @RequestBody ResetVerifyReq r) {
+        PendingReg p = pend.findById(r.token()).orElse(null);
+        if (p == null || p.getUserId() == null || !"RESET".equals(p.getPurpose()) || expired(p))
+            throw new ResponseStatusException(HttpStatus.GONE, "Vaqt tugadi. Parolni tiklashni qaytadan boshlang");
+        if (!p.isVerified() || p.getCode() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avval Telegram botda raqamingizni tasdiqlang");
+        if (!p.getCode().equals(r.code().trim())) {
+            int a = (p.getAttempts() == null ? 0 : p.getAttempts()) + 1;
+            if (a >= 5) {
+                pend.delete(p);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Juda ko'p xato urinish. Qaytadan boshlang");
+            }
+            p.setAttempts(a);
+            pend.save(p);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kod noto'g'ri");
+        }
+        User u = users.findById(p.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Foydalanuvchi topilmadi"));
+        if (u.isBlocked())
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Siz bloklangansiz. Ega bilan bog'laning.");
+        u.setPasswordHash(enc.encode(r.newPassword()));
+        users.save(u);
+        pend.delete(p);
+        return new AuthRes(jwt.create(u), UserRes.of(u));
+    }
+
     @PostMapping("/login")
     public AuthRes login(@Valid @RequestBody LoginReq r) {
         User u = users.findByPhone(normalize(r.phone())).orElse(null);
